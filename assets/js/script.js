@@ -1,39 +1,3 @@
-function getLevenshteinDistance(a, b) {
-    const dp = Array.from({ length: a.length + 1 }, () => Array(b.length + 1).fill(0));
-    for (let i = 0; i <= a.length; i++) dp[i][0] = i;
-    for (let j = 0; j <= b.length; j++) dp[0][j] = j;
-
-    for (let i = 1; i <= a.length; i++) {
-        for (let j = 1; j <= b.length; j++) {
-            const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-            dp[i][j] = Math.min(
-                dp[i - 1][j] + 1,
-                dp[i][j - 1] + 1,
-                dp[i - 1][j - 1] + cost
-            );
-        }
-    }
-    return dp[a.length][b.length];
-}
-
-function findBestMatch(query, data) {
-    let bestMatch = null;
-    let lowestDistance = Infinity;
-
-    for (const [key, value] of Object.entries(data)) {
-        const distanceKey = getLevenshteinDistance(query, key.toLowerCase());
-        const distanceValue = getLevenshteinDistance(query, value.toLowerCase());
-
-        const minDistance = Math.min(distanceKey, distanceValue);
-        if (minDistance < lowestDistance) {
-            lowestDistance = minDistance;
-            bestMatch = value;
-        }
-    }
-
-    return (lowestDistance <= 5) ? bestMatch : null; // 5 is a fuzzy threshold
-}
-
 async function searchJSON() {
     let inputField = document.getElementById("userInput");
     let query = inputField.value.trim().toLowerCase();
@@ -56,8 +20,9 @@ async function searchJSON() {
             let response = await fetch("./assets/data/responses.json");
             let data = await response.json();
 
-            let result = findBestMatch(query, data);
-            botMessage.textContent = result || "No smart match found.";
+            let result = Object.entries(data).find(([key, value]) => key.toLowerCase().includes(query) || value.toLowerCase().includes(query));
+
+            botMessage.textContent = result ? result[1] : "No matching data found.";
         } catch (error) {
             botMessage.textContent = "Error fetching data.";
         }
@@ -66,3 +31,12 @@ async function searchJSON() {
         chatBox.scrollTop = chatBox.scrollHeight;
     }, 1000);
 }
+
+// Add event listener to input field
+let inputField = document.getElementById("userInput");
+inputField.addEventListener("keydown", function(event) {
+    if (event.key === "Enter") {
+        event.preventDefault(); // Prevents form submission if input is inside a form
+        searchJSON();
+    }
+});
